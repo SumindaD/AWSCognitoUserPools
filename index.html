@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Cognito Userpools</title>
+    <title>MSN AWS App</title>
 </head>
 <body>
     <script src="./script/jquery.min.js"></script>	
@@ -26,7 +26,6 @@
     </style>
     
     <input id="emailInput" type="text" placeholder="Email" style="display:none"/></br>
-    <input id="nameInput" type="text" placeholder="Name" style="display:none"/></br>
     <input id="userNameInput" type="text" placeholder="Username"/></br>
     <input id="passwordInput" type="password" placeholder="Password"/></br>
     <input id="confirmPasswordInput" type="password" placeholder="Confirm Password" style="display:none"/></br>
@@ -45,10 +44,10 @@
     
 
     <script>
-        var userPoolId = 'us-east-1_ze2oIfgff';
-        var clientId = '1d5qksbtl38r7o3hams8mkcml3';
+        var userPoolId = 'us-east-1_5i13sQxmt';
+        var clientId = '25vqn2vcus6ffdbm9g75njq6u8';
         var region = 'us-east-1';
-        var identityPoolId = 'us-east-1:4f168c45-71b8-448b-9bed-188c19bdb70d';
+        var identityPoolId = 'us-east-1:985310cb-2688-434a-bce4-b474c2df2c7f';
         
         var cognitoUser;
         var idToken;
@@ -63,7 +62,6 @@
 
         function switchToVerificationCodeView(){
             $("#emailInput").hide();
-            $("#nameInput").hide();
             $("#userNameInput").hide();
             $("#passwordInput").hide();
             $("#confirmPasswordInput").hide();
@@ -78,7 +76,6 @@
 
         function switchToRegisterView(){
             $("#emailInput").show();
-            $("#nameInput").show();
             $("#userNameInput").show();
             $("#passwordInput").show();
             $("#confirmPasswordInput").show();
@@ -93,7 +90,6 @@
 
         function switchToLogInView(){
             $("#emailInput").hide();
-            $("#nameInput").hide();
             $("#userNameInput").show();
             $("#passwordInput").show();
             $("#confirmPasswordInput").hide();
@@ -108,7 +104,6 @@
 
         function switchToLoggedInView(){
             $("#emailInput").hide();
-            $("#nameInput").hide();
             $("#userNameInput").hide();
             $("#passwordInput").hide();
             $("#confirmPasswordInput").hide();
@@ -175,11 +170,11 @@
         function register(){
             switchToRegisterView();
 
-            if( !$('#emailInput').val() || !$('#nameInput').val()  || !$('#userNameInput').val()  || !$('#passwordInput').val() || !$('#confirmPasswordInput').val() ) {
+            if( !$('#emailInput').val() || !$('#userNameInput').val()  || !$('#passwordInput').val() || !$('#confirmPasswordInput').val() ) {
                     logMessage('Please fill all the fields!');
             }else{
                 if($('#passwordInput').val() == $('#confirmPasswordInput').val()){
-                    registerUser($('#nameInput').val(), $('#emailInput').val(), $('#userNameInput').val(), $('#passwordInput').val());
+                    registerUser($('#emailInput').val(), $('#userNameInput').val(), $('#passwordInput').val());
                 }else{
                     logMessage('Confirm password failed!');
                 }
@@ -204,7 +199,7 @@
             }
         }
 
-        function registerUser(name, email, username, password){
+        function registerUser(email, username, password){
             var attributeList = [];
             
             var dataEmail = {
@@ -212,16 +207,9 @@
                 Value : email
             };
 
-            var dataName = {
-                Name : 'name',
-                Value : name
-            };
-
             var attributeEmail = new AmazonCognitoIdentity.CognitoUserAttribute(dataEmail);
-            var attributeName = new AmazonCognitoIdentity.CognitoUserAttribute(dataName);
 
             attributeList.push(attributeEmail);
-            attributeList.push(attributeName);
 
             $("#loader").show();
             userPool.signUp(username, password, attributeList, null, function(err, result){
@@ -240,20 +228,25 @@
         }
 
         function listS3Objects(){
-            getCognitoIdentityCredentials();
+            if(!$('#bucketNameInput').val()){
+                logMessage('Please enter the name of the S3 Bucket!');
+            }else{
+                getCognitoIdentityCredentials();
+                getAWSS3BucketObjects();
+            }
+            
         }
 
         function getCognitoIdentityCredentials(){
             AWS.config.region = region;
 
+            var loginMap = {};
+            loginMap['cognito-idp.' + region + '.amazonaws.com/' + userPoolId] = idToken;
+
             AWS.config.credentials = new AWS.CognitoIdentityCredentials({
                 IdentityPoolId: identityPoolId,
-                Logins: {
-                    'cognito-idp.us-east-1.amazonaws.com/us-east-1_ze2oIfgff' : idToken
-                }
+                Logins: loginMap
             });
-
-            getAWSS3BucketObjects();
         }
 
         function getAWSS3BucketObjects(){
@@ -265,7 +258,7 @@
 
             $("#loader").show();
             s3.listObjects(params, function(err, data) {
-                if (err) console.log(err, err.stack);
+                if (err) logMessage(err.message);
                 else{
                     logMessage('');
                     logMessage('====== S3 Bucket Objects ======');

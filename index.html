@@ -57,7 +57,7 @@
             UserPoolId : userPoolId,
             ClientId : clientId
         };
-
+        
         getCurrentLoggedInSession();
 
         function switchToVerificationCodeView(){
@@ -120,6 +120,9 @@
             $('#log').empty();
         }
 
+        /*
+        Starting point for user logout flow
+        */
         function logOut(){
             if (cognitoUser != null) {
 
@@ -131,6 +134,9 @@
             }
         }
 
+        /*
+        Starting point for user login flow with input validation
+        */
         function logIn(){
 
             if(!$('#userNameInput').val() || !$('#passwordInput').val()){
@@ -167,6 +173,9 @@
             }
         }
 
+        /*
+        Starting point for user registration flow with input validation
+        */
         function register(){
             switchToRegisterView();
 
@@ -182,6 +191,9 @@
             }
         }
 
+        /*
+        Starting point for user verification using AWS Cognito with input validation
+        */
         function verifyCode(){
             if( !$('#verificationCodeInput').val() ) {
                 logMessage('Please enter verification field!');
@@ -199,6 +211,9 @@
             }
         }
 
+        /*
+        User registration using AWS Cognito
+        */
         function registerUser(email, username, password){
             var attributeList = [];
             
@@ -227,16 +242,32 @@
             });
         }
 
+        /*
+        Starting point for AWS List S3 Objects flow with input validation
+        */
         function listS3Objects(){
             if(!$('#bucketNameInput').val()){
                 logMessage('Please enter the name of the S3 Bucket!');
             }else{
+
+                $("#loader").show();
                 getCognitoIdentityCredentials();
-                getAWSS3BucketObjects();
+
+                AWS.config.credentials.get(function(err) {
+                    if (err){
+                        console.log(err);
+                        $("#loader").hide();
+                    }
+                    else getAWSS3BucketObjects();
+                });
+
             }
             
         }
 
+        /*
+        This method will get temporary credentials for AWS using the IdentityPoolId and the Id Token recieved from AWS Cognito authentication provider.
+        */
         function getCognitoIdentityCredentials(){
             AWS.config.region = region;
 
@@ -249,6 +280,10 @@
             });
         }
 
+        /*
+        This method will use AWS S3 SDK to get a list of S3 bucket object.
+        Before using this method, AWS Credentials must be set in AWS config.
+        */
         function getAWSS3BucketObjects(){
             var s3 = new AWS.S3();
 
@@ -256,7 +291,6 @@
                 Bucket: $("#bucketNameInput").val()
             };
 
-            $("#loader").show();
             s3.listObjects(params, function(err, data) {
                 if (err) logMessage(err.message);
                 else{
@@ -272,6 +306,9 @@
             });
         }
 
+        /*
+        If user has logged in before, get the previous session so user doesn't need to log in again.
+        */
         function getCurrentLoggedInSession(){
 
             $("#loader").show();
@@ -298,6 +335,9 @@
 
         }
 
+        /*
+        This is a logging method that will be used throught the application
+        */
         function logMessage(message){
             $('#log').append(message + '</br>');
         }

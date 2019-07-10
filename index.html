@@ -46,10 +46,10 @@
     <script>
 
         //=============== AWS IDs ===============
-        var userPoolId = '<User Pool ID>';
-        var clientId = '<App Client ID>';
-        var region = '<Region>';
-        var identityPoolId = '<Identity Pool ID>';
+        var userPoolId = 'us-east-1_5i13sQxmt';
+        var clientId = '25vqn2vcus6ffdbm9g75njq6u8';
+        var region = 'us-east-1';
+        var identityPoolId = 'us-east-1:985310cb-2688-434a-bce4-b474c2df2c7f';
         //=============== AWS IDs ===============
 
         var cognitoUser;
@@ -164,7 +164,7 @@
                         switchToLoggedInView();
 
                         idToken = result.getIdToken().getJwtToken();
-                        $("#loader").hide();
+                        getCognitoIdentityCredentials();
                     },
 
                     onFailure: function(err) {
@@ -252,18 +252,8 @@
             if(!$('#bucketNameInput').val()){
                 logMessage('Please enter the name of the S3 Bucket!');
             }else{
-
                 $("#loader").show();
-                getCognitoIdentityCredentials();
-
-                AWS.config.credentials.get(function(err) {
-                    if (err){
-                        console.log(err);
-                        $("#loader").hide();
-                    }
-                    else getAWSS3BucketObjects();
-                });
-
+                getAWSS3BucketObjects();
             }
             
         }
@@ -281,13 +271,26 @@
                 IdentityPoolId: identityPoolId,
                 Logins: loginMap
             });
+
+            AWS.config.credentials.get(function(err) {
+                if (err){
+                    logMessage(err.message);
+                }
+                else {
+                    logMessage('AWS Access Key: '+ AWS.config.credentials.accessKeyId);
+                    logMessage('AWS Secret Key: '+ AWS.config.credentials.secretAccessKey);
+                    logMessage('AWS Session Token: '+ AWS.config.credentials.sessionToken);
+                }
+
+                $("#loader").hide();
+            });
         }
 
         /*
         This method will use AWS S3 SDK to get a list of S3 bucket object.
         Before using this method, AWS Credentials must be set in AWS config.
         */
-        function getAWSS3BucketObjects(){
+        function getAWSS3BucketObjects(){            
             var s3 = new AWS.S3();
 
             var params = {
@@ -328,7 +331,7 @@
                     logMessage('Session found! Logged in.');
                     switchToLoggedInView();
                     idToken = session.getIdToken().getJwtToken();
-
+                    getCognitoIdentityCredentials();
                     $("#loader").hide();
                 });
             }else{

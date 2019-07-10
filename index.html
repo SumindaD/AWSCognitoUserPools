@@ -92,6 +92,8 @@
         }
 
         function switchToLogInView(){
+            $("#userNameInput").val('');
+            $("#passwordInput").val('');
             $("#emailInput").hide();
             $("#userNameInput").show();
             $("#passwordInput").show();
@@ -205,10 +207,11 @@
                 cognitoUser.confirmRegistration($('#verificationCodeInput').val(), true, function(err, result) {
                     if (err) {
                         logMessage(err.message);
-                        return;
+                    }else{
+                        logMessage('Successfully verified code!');
+                        switchToLogInView();
                     }
-                    logMessage('Successfully verified code!');
-                    switchToLogInView();
+                    
                     $("#loader").hide();
                 });
             }
@@ -233,14 +236,13 @@
             userPool.signUp(username, password, attributeList, null, function(err, result){
                 if (err) {
                     logMessage(err.message);
-                    return;
+                }else{
+                    cognitoUser = result.user;
+                    logMessage('Registration Successful!');
+                    logMessage('Username is: ' + cognitoUser.getUsername());
+                    logMessage('Please enter the verification code sent to your Email.');
+                    switchToVerificationCodeView();
                 }
-                
-                cognitoUser = result.user;
-                logMessage('Registration Successful!');
-                logMessage('Username is: ' + cognitoUser.getUsername());
-                logMessage('Please enter the verification code sent to your Email.');
-                switchToVerificationCodeView();
                 $("#loader").hide();
             });
         }
@@ -271,6 +273,8 @@
                 IdentityPoolId: identityPoolId,
                 Logins: loginMap
             });
+
+            AWS.config.credentials.clearCachedId();
 
             AWS.config.credentials.get(function(err) {
                 if (err){
@@ -325,13 +329,12 @@
                 cognitoUser.getSession(function(err, session) {
                     if (err) {
                         logMessage(err.message);
-                        return;
+                    }else{
+                        logMessage('Session found! Logged in.');
+                        switchToLoggedInView();
+                        idToken = session.getIdToken().getJwtToken();
+                        getCognitoIdentityCredentials();
                     }
-
-                    logMessage('Session found! Logged in.');
-                    switchToLoggedInView();
-                    idToken = session.getIdToken().getJwtToken();
-                    getCognitoIdentityCredentials();
                     $("#loader").hide();
                 });
             }else{
